@@ -2,55 +2,107 @@
 
 ## Google Cloud Fundamentals: Getting Started with GKE
 
+環境変数にゾーンを設定
+
 ```sh
 export MY_ZONE=us-central1-a
+```
 
+GKEクラスタを作成
+
+```sh
 gcloud container clusters create webfrontend --zone $MY_ZONE --num-nodes 2
+```
 
+Kubenetesのバージョンを確認
+
+```sh
 kubectl version
+```
 
+クラスタにDeploymentをイメージとしてnginx:1.17.10を指定して作成.
+
+```sh
 kubectl create deploy nginx -- image=nginx:1.17.10
 
 kubectl get pods
+```
 
+作成したDeploymentへ80/tcpでアクセスできるようにLoadBalancerタイプのServiceを作成し、そのサービスのバックエンドとして作成したDeploymentを利用することを指定.
+
+```sh
 kubectl expose deployment nginx --port 80 --type LoadBalancer
 
-kubectl gegt services
+kubectl get services
+```
 
+作成したDeploymentで動作させるPodの数を3に変更
+
+```sh
 kubectl scale deployment nginx --replicas 3
 
 kubectl get pods
-
-kubectl get services
-
-connect to loadbalancer's external ip
 ```
 
+作成したServiceを確認し、LoadBalancerの外部IPアドレスを知る
+
+```sh
+kubectl get services
+```
+
+LoadBalancerの外部IPアドレスにアクセスすると、バックエンドのDeployment内のPodがレスポンスを返すことを確認.
+
 ## Hello Cloud Run APPRUN
+
+gcloudコマンドの設定、環境変数の設定を行う
 
 ```sh
 gcloud config set compute/region us-central1
 
 LOCATION="us-central1"
+```
 
-make package.json
+Dockerイメージ作成に必要なファイルを作成
 
-make index.js
+- package.json
+- index.js
+- Dockerfile
 
-make Dockerfile
+Cloud Buildを使ってDockerイメージを作成し、プロジェクトのArtifact Repositryに格納
 
+```sh
 gcloud builds submit --tag gcr.io/$GOOGLE_CLOUD_PROJECT/helloworld
 
 gcloud container images list
+```
 
+ローカルで確認
+
+```sh
 docker run -d -p 8080:8080 gcr.io/$GOOGLE_CLOUD_PROJECT/helloworld
+```
 
+Artfact Repositryに格納されているDockerイメージを指定してCloud Runリソースを作成
+`--allow-unauthenticated`としているため、認証されていなくてもアクセスできる
+
+作成したCloud Runリソース用のURLを得られる
+
+```sh
 gcloud run deploy --image gcr.io/$GOOGLE_CLOUD_PROJECT/helloworld --allow-unauthenticated --region=$LOCATION
+```
 
-connect to cloud run service (https://<cloud-run-service-name>-<project-id>-<location>.run.app)
+Cloud Runリソース用のURLにアクセス
+(`https://<cloud-run-service-name>-<project-id>-<location>.run.app`)
 
+作成したCloud Runリソースを削除
+
+```sh
 gcloud container images delete gcr.io/$GOOGLE_CLOUD_PROJECT/helloworld
+```
 
+Artifact Repositryから作成したDockerイメージを削除.
+
+```sh
 gcloud beta run services delete helloworld
 ```
 
@@ -200,7 +252,7 @@ runtime_config:
   python_version: 3
 env_variables:
   GCLOUD_BUCKET: "[GCLOUD_PROJECT]-media"
-```
+``
 
 ```sh
 gcloud config set app/cloud_build_timeout 1800
@@ -1073,3 +1125,347 @@ gcloud compute forwarding-rules create myforwardingrule \
 ```
 
 これでロードバランサー経由でアクセスできるようになった
+
+## Configuring Egress from a Static Outbound IP Address [APPRUN]
+
+gcloudコマンドの設定、環境編巣の設定
+
+```sh
+gcloud config set compute/region us-central1
+
+LOCATION="us-central1"
+```
+
+DockerイメージをPack CLI(Cloud Consoleにはインストールされているっぽい)を使って作成し、Artifact Repositryに格納.
+
+```sh
+git clone https://github.com/GoogleCloudPlatform/buildpack-samples.git
+
+cd buildpack-samples/sample-go
+pack build --builder=gcr.io/buildpacks/builder sample-go
+
+docker run -it -e PORT=8080 -p 8080:8080 sample-go
+
+pack set-default-builder gcr.io/buildpacks/builder:v1
+
+pack build --publish gcr.io/$GOOGLE_CLOUD_PROJECT/sample-go
+```
+
+Cloud RunがプロジェクトのVPCネットワークにアクセスするために使用するVPC Connector(vpc-access)が接続するVPCネットワーク上のサブネットを作成する.
+
+```sh
+gcloud compute networks list
+
+gcloud compute networks subnets create mysubnet \
+   --range=192.168.0.0/28 --network=default --region=$LOCATION
+```
+
+VPC Connectorを作成し、そのVPCコネクタが接続するサブネットとして先に作ったサブネットを指定する.
+これにより、作成したVPC Connectorを使用するCloud Runリソースからのネットワークのアクセスは、VPC Connectorが所属するサブネットのIPアドレスをソースアドレスとしたアクセスとなる.
+
+```sh
+gcloud compute networks vpc-access connectors create myconnector \
+  --region=$LOCATION \
+  --subnet-project=$GOOGLE_CLOUD_PROJECT \
+  --subnet=mysubnet
+```
+
+インターネットにアクセスするためのルーターを`myrouter`という名前で作成.
+
+```sh
+gcloud compute routers create myrouter \
+  --network=default \
+  --region=$LOCATION
+```
+
+natで使用するインターネットIPアドレスを確保する.
+
+```sh
+gcloud compute addresses create myoriginip --region=$LOCATION
+```
+
+ルータ`myrouter`にnat機能を設定する.
+`--router`でどのルータに適用するかを指定.
+`--nat-custom-subnet-ip-ranges`でVPCネットワーク内のどのサブネットのIPアドレスをnatの対象とするかを指定.
+`--nat-external-ip-pool`でnatで使用する外部IPアドレス(インターネットIPアドレス)を指定する.
+
+```sh
+gcloud compute routers nats create mynat \
+  --router=myrouter \
+  --region=$LOCATION \
+  --nat-custom-subnet-ip-ranges=mysubnet \
+  --nat-external-ip-pool=myoriginip
+```
+
+Cloud Runリソースを作成.
+`--vpc-connector`でCloud Runが接続するVPC Connectorを指定.
+`--vpc-egress=all-traffic`でCloud RunからのすべてのネットワークへのアクセスをVPC Connector経由とすることを指定.
+
+```sh
+gcloud run deploy sample-go \
+   --image=gcr.io/$GOOGLE_CLOUD_PROJECT/sample-go \
+   --vpc-connector=myconnector \
+   --vpc-egress=all-traffic
+```
+
+## Cloud SSQL with Cloud RUN[APPRUN]
+
+gcloud services enable run.googleapis.com
+
+gcloud config set compute/region us-central1
+
+LOCATION="us-central1"
+
+Cloud SQL instanceを作成
+
+Cloud SQLの実体はプロジェクトのVPC上には存在しないことに注意.
+
+- postgreSQLのユーザ`postgres`のパスワードを設定
+- Public IP Adressでのアクセスを可とする
+- 作成したインスタンスConnection Nameを確認する
+
+> セキュリティを確保するには色々な方法が考えらるが、その一つが以下.
+>
+> Nat機能を設定、NatのIPアドレスのみをCloud SQLのDBにアクセス可能なIPアドレスとして指定.
+> Natの設定としては、VPC内の特定のサブネットから外部へのアクセスを対象とする.
+> VPC ConnectorをNat対象となるVPC上のサブネットに接続する形で作成.
+> Cloud Runで設定したVPC Connectorを使用するように設定.
+
+Cloud SQLにgcloudコマンド経由でアクセスし、必要となるテーブルなどを作成する.
+
+```sh
+gcloud sql connect poll-database --user=postgres
+
+\connect postgres;
+
+CREATE TABLE IF NOT EXISTS votes
+( vote_id SERIAL NOT NULL, time_cast timestamp NOT NULL,
+candidate VARCHAR(6) NOT NULL, PRIMARY KEY (vote_id) );
+
+CREATE TABLE IF NOT EXISTS totals
+( total_id SERIAL NOT NULL, candidate VARCHAR(6) NOT NULL,
+num_votes INT DEFAULT 0, PRIMARY KEY (total_id) );
+
+INSERT INTO totals (candidate, num_votes) VALUES ('TABS', 0);
+
+INSERT INTO totals (candidate, num_votes) VALUES ('SPACES', 0);
+```
+
+Cloud Runリソースを、作成したCloud SQLにアクセスするための情報を環境変数として与える形で作成.
+`--add-cloudsql-instances`を使用するとCloud SQL Auth Proxyを使用したアクセスとなり、自動的にCloud SQLインスタンスへのデータが暗号化された形になるっぽい.
+[Cloud SQL Auth Proxy を使用して Cloud Run から Cloud SQL に接続する](https://blog.g-gen.co.jp/entry/from-cloudrun-to-cloud-sql-with-auth-proxy)
+`--set-env-vars`でCloud Runが実行されるときの環境変数を注入.
+
+```sh
+gcloud beta run deploy poll-service \
+   --image gcr.io/qwiklabs-resources/gsp737-tabspaces \
+   --region $LOCATION \
+   --allow-unauthenticated \
+   --add-cloudsql-instances=$CLOUD_SQL_CONNECTION_NAME \
+   --set-env-vars "DB_USER=postgres" \
+   --set-env-vars "DB_PASS=secretpassword" \
+   --set-env-vars "DB_NAME=postgres" \
+   --set-env-vars "CLOUD_SQL_CONNECTION_NAME=$CLOUD_SQL_CONNECTION_NAME"
+```
+
+## Using Cloud PubSub with Cloud Run [APPRUN]
+
+Cloud Run APIを有効化.
+
+```sh
+gcloud services enable run.googleapis.com
+```
+
+gcloudコマンドの設定、環境変数の設定.
+
+```sh
+gcloud config set compute/region us-central1
+LOCATION="us-central1"
+```
+
+認証されていないユーザでも実行可能なCloud Runリソースを`store-service`という名前で作成.
+
+```sh
+gcloud run deploy store-service \
+ --image gcr.io/qwiklabs-resources/gsp724-store-service \
+ --region $LOCATION \
+ --allow-unauthenticated
+```
+
+認証されていないユーザは実行できないCloud Runリソースを`order-service`という名前で作成.
+
+```sh
+gcloud run deploy order-service \
+ --image gcr.io/qwiklabs-resources/gsp724-order-service \
+ --region $LOCATION \
+ --no-allow-unauthenticated
+```
+
+Pub/Subトピックを作成.
+
+```sh
+gcloud pubsub topics create ORDER_PLACED
+```
+
+`order-service`起動用のサービスアカウントを作成.
+
+```sh
+gcloud iam service-accounts create pubsub-cloud-run-invoker \
+   --display-name "Order Initiator"
+
+gcloud iam service-accounts list --filter="Order Initiator"
+```
+
+先ほど作ったサービスアカウントに、Cloud Runリソース`order-serivce`に対する起動権限を付与.
+
+```sh
+gcloud run services add-iam-policy-binding order-service \
+  --member=serviceAccount:pubsub-cloud-run-invoker@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com \
+  --role=roles/run.invoker
+  --platform managed
+```
+
+Pub/Subサービスを実行しているサービスアカウント`service-$PROJECT_NUMBER@gcp-sa-pubsub.iam.gserviceaccount.com`に対して他のアカウントのトークンを作成するために必要となるロール(`roles/iam.serviceAccountTokenCreator`)をプロジェクトレベルで付与.
+
+```sh
+PROJECT_NUMBER=$(gcloud projects list \
+  --filter="qwiklabs-gcp" \
+  --format='value(PROJECT_NUMBER)')
+
+gcloud projects add-iam-policy-binding $GOOGLE_CLOUD_PROJECT \
+   --member=serviceAccount:service-$PROJECT_NUMBER@gcp-sa-pubsub.iam.gserviceaccount.com \
+   --role=roles/iam.serviceAccountTokenCreator
+```
+
+先ほど作ったTopicに投稿されたときに、`order-serivce`を起動するようにサブスクリプションを作成.
+`--push-endpoint`で`order-service`のエンドポイントURLを指定.
+`--push-auth-service-account`で起動時に使用するサービスアカウントを指定.
+
+```sh
+ORDER_SERVICE_URL=$(gcloud run services describe order-service \
+   --region $LOCATION \
+   --format="value(status.address.url)")
+
+gcloud pubsub subscriptions create order-service-sub \
+   --topic ORDER_PLACED \
+   --push-endpoint=$ORDER_SERVICE_URL \
+   --push-auth-service-account=pubsub-cloud-run-invoker@$GOOGLE_CLOUD_PROJECT.iam.gserviceaccount.com
+```
+
+認証なしのCloud Runサービス(`store-service`)にアクセス.
+`store-service`はその処理の中で上記で作成したTopicに対して投稿するようになっている.
+その結果、`order-service`がPub/Sub経由で実行されることになる.
+
+```sh
+test.json
+
+{
+  "billing_address": {
+    "name": "Kylie Scull",
+    "address": "6471 Front Street",
+    "city": "Mountain View",
+    "state_province": "CA",
+    "postal_code": "94043",
+    "country": "US"
+  },
+  "shipping_address": {
+    "name": "Kylie Scull",
+    "address": "9902 Cambridge Grove",
+    "city": "Martinville",
+    "state_province": "BC",
+    "postal_code": "V1A",
+    "country": "Canada"
+  },
+  "items": [
+    {
+      "id": "RW134",
+      "quantity": 1,
+      "sub-total": 12.95
+    },
+    {
+      "id": "IB541",
+      "quantity": 2,
+      "sub-total": 24.5
+    }
+ ]
+}
+
+STORE_SERVICE_URL=$(gcloud run services describe store-service \
+   --region $LOCATION \
+   --format="value(status.address.url)")
+
+curl -X POST -H "Content-Type: application/json" -d @test.json $STORE_SERVICE_URL
+```
+
+## Cloud Build を使ってみる
+
+Cloud BuildでDockerイメージを作成するために必要なファイルを作成.
+
+- Dockerfile
+- DockerfileでCOPYされるファイル
+
+Cloud BuildでDockerイメージを作成してプロジェクト固有のArtifact Repositryに格納.
+
+```sh
+gcloud builds submit --tag gcr.io/${GOOGLE_CLOUD_PROJECT}/quickstart-image .
+```
+
+----
+
+Cloud Buildのサンプルを取得
+
+```sh
+git clone https://github.com/GoogleCloudPlatform/training-data-analyst
+
+ln -s ~/training-data-analyst/courses/ak8s/v1.1 ~/ak8s
+
+cd ~/ak8s/Cloud_Build/a
+```
+
+Cloud Buildで実行する内容を記述したファイルを参照.
+
+```sh
+cat cloudbuild.yaml
+```
+
+```yaml
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build', '-t', 'gcr.io/$PROJECT_ID/quickstart-image', '.' ]
+images:
+- 'gcr.io/$PROJECT_ID/quickstart-image'
+```
+
+ビルドステップを記述したファイルを指定してCloud BuildでDockerイメージを作成.
+
+```sh
+gcloud builds submit --config cloudbuild.yaml .
+```
+
+----
+
+```sh
+cd ~/ak8s/Cloud_Build/b
+```
+
+Cloud Buildで実行する内容を記述したファイルを参照.
+
+```sh
+cat cloudbuild.yaml
+```
+
+```yaml
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: [ 'build', '-t', 'gcr.io/$PROJECT_ID/quickstart-image', '.' ]
+- name: 'gcr.io/$PROJECT_ID/quickstart-image'
+  args: ['fail']
+images:
+- 'gcr.io/$PROJECT_ID/quickstart-image
+```
+
+ビルドステップを記述したファイルを指定してCloud BuildでDockerイメージを作成.
+
+```sh
+gcloud builds submit --config cloudbuild.yaml .
+```
