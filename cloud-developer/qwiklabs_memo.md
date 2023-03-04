@@ -704,22 +704,22 @@ app.listen(port, () => {
 Dockerfileを作成
 
 ```Dockerfile
-# Node.js 12 の公式の軽量イメージを使用します。
+# Node.js 12 の公式の軽量イメージを使用します.
 # https://hub.docker.com/_/node
 FROM node:12-slim
-# app ディレクトリを作成してそのディレクトリに移動します。
+# app ディレクトリを作成してそのディレクトリに移動します.
 WORKDIR /usr/src/app
-# アプリケーション依存関係マニフェストをコンテナ イメージにコピーします。
-# package.json と package-lock.json の両方がコピーされるようにワイルドカードを使用します（利用可能な場合）。
-# これを最初にコピーしておくと、コードを変更するたびに npm install を再実行する必要がなくなります。
+# アプリケーション依存関係マニフェストをコンテナ イメージにコピーします.
+# package.json と package-lock.json の両方がコピーされるようにワイルドカードを使用します（利用可能な場合）.
+# これを最初にコピーしておくと、コードを変更するたびに npm install を再実行する必要がなくなります.
 COPY package*.json ./
-# 本番環境の依存関係をインストールします。
-# package-lock.json を追加した場合、「npm ci」に切り替えることでビルドを高速化します。
+# 本番環境の依存関係をインストールします.
+# package-lock.json を追加した場合、「npm ci」に切り替えることでビルドを高速化します.
 # RUN npm ci --only=production
 RUN npm install --only=production
-# ローカルコードをコンテナ イメージにコピーします。
+# ローカルコードをコンテナ イメージにコピーします.
 COPY . ./
-# コンテナの起動時にウェブサービスを実行します。
+# コンテナの起動時にウェブサービスを実行します.
 CMD [ "npm", "start" ]
 ```
 
@@ -1520,8 +1520,8 @@ export my_cluster=standard-cluster-1
 source <(kubectl completion bash)
 ```
 
-GKE Clusterにアクセスする際のクレデンシャルファイルを取得し、設定する。
-このラボではすでにクラスタが作られている。
+GKE Clusterにアクセスする際のクレデンシャルファイルを取得し、設定する.
+このラボではすでにクラスタが作られている.
 
 ```sh
 gcloud container clusters get-credentials $my_cluster --zone $my_zone
@@ -1631,11 +1631,11 @@ LoadBalancerの外部IPアドレスにアクセス.
 カナリアデプロイを実行する
 
 カナリアデプロイ用のファイルを作成する.
-このデプロイを適用すると新たなデプロイメントが作成される。
-ただし、Deployment内で動作するPodのmetadata.labels.appの値は先のステップで作成したDeployにより作成されたPodと同じ値。
-先のステップで作成したLoadBalancer Serviceの振り分け基準で使用しているPodの条件がmetadata.labels.appの値なので、新たに作成したDeploymentにもトラフィックが流れる。
+このデプロイを適用すると新たなデプロイメントが作成される.
+ただし、Deployment内で動作するPodのmetadata.labels.appの値は先のステップで作成したDeployにより作成されたPodと同じ値.
+先のステップで作成したLoadBalancer Serviceの振り分け基準で使用しているPodの条件がmetadata.labels.appの値なので、新たに作成したDeploymentにもトラフィックが流れる.
 
-nginx-canary.yamlを作成する。
+nginx-canary.yamlを作成する.
 
 ```yaml
 apiVersion: apps/v1
@@ -1679,9 +1679,9 @@ kubectl get deployments
 
 アフィニティ
 
-1つのクラン後から送信されるリクエストが異なるDeploymentのPodにアクセスされないようにしたい場合がある。
-その場合にはService作成用のファイルで`sessionAffinity`を`ClientIP`を指定する。
-その場合のService定義用のyamlファイルは以下。
+1つのクラン後から送信されるリクエストが異なるDeploymentのPodにアクセスされないようにしたい場合がある.
+その場合にはService作成用のファイルで`sessionAffinity`を`ClientIP`を指定する.
+その場合のService定義用のyamlファイルは以下.
 
 ```yaml
 apiVersion: v1
@@ -1701,79 +1701,178 @@ spec:
 
 ## Google Kubernetes Engine 用に永続ストレージを構成する
 
+環境変数の設定、kubectlの補完が有効になるようにしている.
+
+```sh
 export my_zone=us-central1-a
 export my_cluster=standard-cluster-1
 source <(kubectl completion bash)
-
-gcloud container clusters get-credentials $my_cluster --zone $my_zone
-
-git clone https://github.com/GoogleCloudPlatform/training-data-analyst
-ln -s ~/training-data-analyst/courses/ak8s/v1.1 ~/ak8s
-cd ~/ak8s/Storage/
-
-kubectl get persistentvolumeclaim
-
-pov-demo.yamlを作成
-
-```yaml
 ```
 
-kubectl apply -f pvc-demo.yaml
+このLabではすでにK8sクラスタができているので、クラスタにアクセスするためのクレデンシャルを取得し、それを`~/.kube`配下に格納してアクセスするための設定を行う.
 
+```sh
+gcloud container clusters get-credentials $my_cluster --zone $my_zone
+```
+
+persistenVolumeClaimリソースを作成する.
+
+pvc-demo.yamlを作成
+
+```yaml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hello-web-disk
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 30Gi
+```
+
+```sh
+kubectl apply -f pvc-demo.yaml
 kubectl get persistentvolumeclaim
+```
 
 persistentVolumeClaimを使用するPodを作成する
 
 pod-volume-demo.yamlを作成
 
 ```yaml
+kind: Pod
+apiVersion: v1
+metadata:
+  name: pvc-demo-pod
+spec:
+  containers:
+    - name: frontend
+      image: nginx
+      volumeMounts:
+      - mountPath: "/var/www/html"
+        name: pvc-demo-volume
+  volumes:
+    - name: pvc-demo-volume
+      persistentVolumeClaim:
+        claimName: hello-web-disk
 ```
 
+```sh
 kubectl apply -f pod-volume-demo.yaml
-
 kubectl get pods
+```
 
+Podに入って書き込んだデータがPodが消えても残っていることを確認.
 
+```sh
 kubectl exec -it pvc-demo-pod -- sh
 
 echo Test webpage in a persistent volume!>/var/www/html/index.html
 chmod +x /var/www/html/index.html
 cat /var/www/html/index.html
 exit
+```
 
+Podを削除.
+
+```sh
 kubectl delete pod pvc-demo-pod
 kubectl get pods
+```
 
+再度`pvc-demo.yaml`で作成したPersistent Volume ClaimをアタッチするPodを作成.
+
+```sh
 kubectl get persistentvolumeclaim
-
 kubectl apply -f pod-volume-demo.yaml
 kubectl get pods
+```
 
+Persistent Volumeに書き込んだデータが残っていることを確認.
+
+```sh
 kubectl exec -it pvc-demo-pod -- sh
 
 cat /var/www/html/index.html
 exit
+```
 
+Podを削除して後始末する.
+
+```sh
 kubectl delete pod pvc-demo-pod
 kubectl get pods
+```
 
-StatefulSetを作成する。
-設定で`spec.volumeClaimTemplates`を設定することで各Pod用の永続ディスクが作成される。
+StatefulSetを作成する.
+設定で`spec.volumeClaimTemplates`を設定することで各Pod用の永続ディスクが作成される.
 
-statefulset-demo.yamlを作成。
+statefulset-demo.yamlを作成.
+設定の`volumeClaimTemplates`でPersistent Volume Claimのテンプレートを指定.
+statefulSetの各Podに対して異なるPersistent Volumeがアタッチされる.
+手動でstatefulSetが管理しているPodを削除すると自動的にPodが再作成されるが、その際のPodのIDは消されたものが引き継がれ、同じPersistent Volumeにアタッチされる.
 
 ```yaml
+kind: Service
+apiVersion: v1
+metadata:
+  name: statefulset-demo-service
+spec:
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 9376
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: statefulset-demo
+spec:
+  selector:
+    matchLabels:
+      app: MyApp
+  serviceName: statefulset-demo-service
+  replicas: 3
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: MyApp
+    spec:
+      containers:
+      - name: stateful-set-container
+        image: nginx
+        ports:
+        - containerPort: 80
+          name: http
+        volumeMounts:
+        - name: hello-web-disk
+          mountPath: "/var/www/html"
+  volumeClaimTemplates:
+  - metadata:
+      name: hello-web-disk
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 30Gi
 ```
 
+```sh
 kubectl apply -f statefulset-demo.yaml
-
 kubectl describe statefulset statefulset-demo
-
 kubectl get pods
 kubectl get pvc
-
 kubectl describe pvc hello-web-disk-statefulset-demo-0
+```
 
+Podの中に入り、ファイルに書き込み.
+
+```sh
 kubectl exec -it statefulset-demo-0 -- sh
 
 cat /var/www/html/index.html
@@ -1781,15 +1880,298 @@ echo Test webpage in a persistent volume!>/var/www/html/index.html
 chmod +x /var/www/html/index.html
 cat /var/www/html/index.html
 exit
+```
 
+Podを無理やり削除.
+ただし、statefulSetはそれを検知してPodを再作成する.
 
+```sh
 kubectl delete pod statefulset-demo-0
 kubectl get pods
+```
 
+再作成されたPodがマウントしているVolumeが以前のPodと同じになっていることを確認.
+
+```sh
 kubectl exec -it statefulset-demo-0 -- sh
 
 cat /var/www/html/index.html
 exit
+```
 
+## AHYBRID-132: Receive Pub/Sub events with Eventarc and Cloud Run
 
+```sh
+export PROJECT_ID=$(gcloud config get-value project)
+export C1_NAME="demo-cluster"
+export C1_ZONE="us-central1-b"
+gcloud config set run/region us-central1
+gcloud config set run/platform managed
+gcloud config set eventarc/location us-central1
+```
 
+```sh
+gcloud container clusters get-credentials $C1_NAME --zone $C1_ZONE --project $PROJECT_ID
+```
+
+Enable Cloud Run for Anthos on your project.
+
+```sh
+gcloud container fleet cloudrun enable --project=$PROJECT_ID
+```
+
+Install Cloud Run for Anthos on your cluster.
+
+```sh
+gcloud container fleet cloudrun apply --gke-cluster=$C1_ZONE/$C1_NAME
+```
+
+Deploy a Cloud Run application
+
+git clone https://github.com/GoogleCloudPlatform/nodejs-docs-samples.git
+cd nodejs-docs-samples/eventarc/pubsub/
+
+gcloud builds submit --tag gcr.io/$(gcloud config get-value project)/events-pubsub
+gcloud run deploy helloworld-events-pubsub-tutorial \
+  --image gcr.io/$(gcloud config get-value project)/events-pubsub \
+  --allow-unauthenticated \
+  --max-instances=1
+
+ Create an Eventarc trigger for Cloud Run
+
+```sh
+gcloud eventarc triggers create events-pubsub-trigger \
+  --destination-run-service=helloworld-events-pubsub-tutorial \
+  --destination-run-region=us-central1 \
+  --event-filters="type=google.cloud.pubsub.topic.v1.messagePublished"
+
+gcloud eventarc triggers list --location=us-central1
+```
+
+```sh
+export RUN_TOPIC=$(gcloud eventarc triggers describe events-pubsub-trigger \
+  --format='value(transport.pubsub.topic)')
+
+gcloud pubsub topics publish $RUN_TOPIC --message "Runner"
+```
+
+Prepare the environment for Eventarc and Cloud Run for Anthos
+
+Create a service account to use when creating triggers
+
+```sh
+TRIGGER_SA=pubsub-to-anthos-trigger
+
+gcloud iam service-accounts create $TRIGGER_SA
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member "serviceAccount:${TRIGGER_SA}@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role "roles/pubsub.subscriber"
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member "serviceAccount:${TRIGGER_SA}@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role "roles/monitoring.metricWriter"
+```
+
+Enable GKE destinations for Eventarc
+
+```sh
+gcloud eventarc gke-destinations init
+```
+
+Deploy the Cloud Run for Anthos application
+`--cluster`: どのGKEクラスタでCloud Runを動作させるか().
+`--cluster-location`: GKEクラスタが存在するゾーン. 
+`--platform gke`: 実行先はGKEクラスタであることを指定.
+プロジェクトでCloud Run for Anthosを有効にし、対象となるGKEクラスタでもCloud Run for Anthosを有効にしておく必要がある.
+
+```sh
+gcloud run deploy subscriber-service \
+  --cluster $C1_NAME \
+  --cluster-location $C1_ZONE \
+  --platform gke \
+  --image gcr.io/$(gcloud config get-value project)/events-pubsub
+```
+
+Create an Eventarc trigger for Cloud Run on Anthos  
+
+Eventarcでトリガーとなるイベントが発生いたときに実行するCloud Run ServiceとしてプロジェクトのGKEクラスタ配下のノードで起動するように指定している.
+
+```sh
+gcloud eventarc triggers create pubsub-trigger \
+  --location=us-central1 \
+  --destination-gke-cluster=$C1_NAME \
+  --destination-gke-location=$C1_ZONE \
+  --destination-gke-namespace=default \
+  --destination-gke-service=subscriber-service \
+  --destination-gke-path=/ \
+  --event-filters="type=google.cloud.pubsub.topic.v1.messagePublished" \
+  --service-account=${TRIGGER_SA}@${PROJECT_ID}.iam.gserviceaccount.com
+  
+gcloud eventarc triggers list --location=us-central1
+```
+
+Cloud Runを起動させるイベントを発生させ、Cloud Run for Anthosで起動していることを確認.
+
+```sh
+export RUN_TOPIC=$(gcloud eventarc triggers describe pubsub-trigger \
+  --location=us-central1 \
+  --format='value(transport.pubsub.topic)')
+
+gcloud pubsub topics publish $RUN_TOPIC --message "Cloud Run on Anthos"
+```
+
+# Firestore データベースへデータを読み込む
+
+git clone https://github.com/rosera/pet-theory
+
+cd pet-theory/lab01
+
+```json
+{
+  "name": "lab01",
+  "version": "1.0.0",
+  "description": "This is lab01 of the Pet Theory labs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Patrick - IT",
+  "license": "MIT",
+  "dependencies": {
+    "csv-parse": "^4.4.5"
+  }
+}
+```
+
+```sh
+npm install @google-cloud/firestore
+npm install @google-cloud/logging
+```
+
+プログラムを作成.
+
+importTestData.js
+
+```js
+const {promisify} = require('util');
+const parse       = promisify(require('csv-parse'));
+const {readFile}  = require('fs').promises;
+const {Firestore} = require('@google-cloud/firestore');
+const {Logging} = require('@google-cloud/logging');
+
+const logName = 'pet-theory-logs-importTestData';
+// Logging クライアントの作成
+const logging = new Logging();
+const log = logging.log(logName);
+const resource = {
+  type: 'global',
+};
+
+if (process.argv.length < 3) {
+  console.error('Please include a path to a csv file');
+  process.exit(1);
+}
+
+const db = new Firestore();
+function writeToFirestore(records) {
+  const batchCommits = [];
+  let batch = db.batch();
+  records.forEach((record, i) => {
+    var docRef = db.collection('customers').doc(record.email);
+    batch.set(docRef, record);
+    if ((i + 1) % 500 === 0) {
+      console.log(`Writing record ${i + 1}`);
+      batchCommits.push(batch.commit());
+      batch = db.batch();
+    }
+  });
+  batchCommits.push(batch.commit());
+  return Promise.all(batchCommits);
+}
+
+function writeToDatabase(records) {
+  records.forEach((record, i) => {
+    console.log(`ID: ${record.id} Email: ${record.email} Name: ${record.name} Phone: ${record.phone}`);
+  });
+  return ;
+}
+
+async function importCsv(csvFileName) {
+  const fileContents = await readFile(csvFileName, 'utf8');
+  const records = await parse(fileContents, { columns: true });
+  try {
+    await writeToFirestore(records);
+    // await writeToDatabase(records);
+  }
+  catch (e) {
+    console.error(e);
+    process.exit(1);
+  }
+  console.log(`Wrote ${records.length} records`);
+  
+  // テキスト ログエントリ
+  success_message = `Success: importTestData - Wrote ${records.length} records`
+  const entry = log.entry({resource: resource}, {message: `${success_message}`});
+  log.write([entry]);
+}
+
+importCsv(process.argv[2]).catch(e => console.error(e));
+```
+
+```sh
+npm install faker@5.5.3
+```
+
+プログラム作成.
+createTestData.js
+
+```js
+async function createTestData(recordCount) {
+  const fileName = `customers_${recordCount}.csv`;
+  var f = fs.createWriteStream(fileName);
+  f.write('id,name,email,phone\n')
+  for (let i=0; i<recordCount; i++) {
+    const id = faker.datatype.number();
+    const firstName = faker.name.firstName();
+    const lastName = faker.name.lastName();
+    const name = `${firstName} ${lastName}`;
+    const email = getRandomCustomerEmail(firstName, lastName);
+    const phone = faker.phone.phoneNumber();
+    f.write(`${id},${name},${email},${phone}\n`);
+  }
+  console.log(`Created file ${fileName} containing ${recordCount} records.`);
+  // テキスト ログエントリ
+  const success_message = `Success: createTestData - Created file ${fileName} containing ${recordCount} records.`
+  const entry = log.entry({resource: resource}, {name: `${fileName}`, recordCount: `${recordCount}`, message: `${success_message}`});
+  log.write([entry]);
+}
+```
+
+```sh
+PROJECT_ID=$(gcloud config get-value project)
+gcloud config set project PROJECT_ID
+```
+
+```sh
+node createTestData 1000
+```
+
+```sh
+node importTestData customers_1000.csv
+```
+
+```sh
+node importTestData customers_1000.csv
+```
+
+デベロッパーにログを参照するロール、ソースコードをチェックインする権限を付与.
+
+```sh
+  gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member=user:[EMAIL] --role=roles/logging.viewer
+  
+  gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member=user:[EMAIL] --role roles/source.writer
+```
