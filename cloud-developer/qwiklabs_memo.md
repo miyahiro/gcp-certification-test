@@ -1469,3 +1469,327 @@ images:
 ```sh
 gcloud builds submit --config cloudbuild.yaml .
 ```
+
+## Google Kubernetes Engine をデプロイする
+
+```sh
+CLUSTER_NAME=standard-cluster-1
+ZONE=us-central1-a
+```
+
+GKEクラスタを`$CLUSTER_NAME`という名前でゾーン`$ZONE`に作成
+
+```sh
+gcloud container clusters create $CLUSTER_NAME --zone $ZONE --num-nodes 2
+```
+
+GKEクラスアにアクセスするceredentialを取得し保存
+
+```sh
+gcloud container clusters get-credentials --zone $ZONE $CLUSTER_NAME
+```
+
+GKEクラスタのノード数を変更する.
+
+```sh
+gcloud container clusters resize --zone $ZONE $CLUSTER_NAME \
+    --node-pool default-pool \
+    --num-nodes 3
+```
+
+Deploymentインスタンスを作成
+
+```sh
+kubectl create deployment nginx-1 --image=nginx:latest
+kubectl label deployment nginx-1 app=nginx-1
+```
+
+yamlとしてDeploymentを出力
+
+```sh
+kubectl get deployment nginx-1 -o=yaml
+```
+
+## Google Kubernetes Engine Deployment を作成する
+
+環境変数、コマンドの保管のための設定を行う.
+
+```sh
+export my_zone=us-central1-a
+export my_cluster=standard-cluster-1
+source <(kubectl completion bash)
+```
+
+GKE Clusterにアクセスする際のクレデンシャルファイルを取得し、設定する。
+このラボではすでにクラスタが作られている。
+
+```sh
+gcloud container clusters get-credentials $my_cluster --zone $my_zone
+```
+
+Deploymentを作成する
+
+nginx-deployment.yamlを作成
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.7.9
+        ports:
+        - containerPort: 80
+```
+
+```sh
+kubectl apply -f ./nginx-deployment.yaml
+kubectl get deployments
+```
+
+DeploymentのPod数を変更する
+
+```sh
+kubectl scale --replicas=3 deployment nginx-deployment
+kubectl get deployments
+```
+
+Deployment用のPodのイメージを作成する.
+こうすると、新しいバージョンのreplicaSetが作成され、自動的にロールアウトされる？
+
+```sh
+kubectl set image deployment.v1.apps/nginx-deployment nginx=nginx:1.9.1 --record
+```
+
+ロールアウトの状況を確認.
+
+```sh
+kubectl rollout status deployment.v1.apps/nginx-deployment
+kubectl get deployments
+```
+
+ロールアウトの履歴を確認する.
+
+```sh
+kubectl rollout history deployment nginx-deployment
+```
+
+Deploymentをひとつ前の状態に戻す.
+
+```sh
+kubectl rollout undo deployments nginx-deployment
+```
+
+Deploymentのロールアウトの履歴を見る.
+
+```sh
+kubectl rollout history deployment nginx-deployment
+kubectl rollout history deployment/nginx-deployment --revision=3
+```
+
+LoadBalancerサービスを作成する.
+
+service-nginx.yamlを作成
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+spec:
+  type: LoadBalancer
+  selector:
+    app: nginx
+  ports:
+  - protocol: TCP
+    port: 60000
+    targetPort: 80
+```
+
+LoadBalancerサービスを適用する.
+
+```sh
+kubectl apply -f ./service-nginx.yaml
+kubectl get service nginx
+```
+
+LoadBalancerの外部IPアドレスにアクセス.
+
+カナリアデプロイを実行する
+
+カナリアデプロイ用のファイルを作成する.
+このデプロイを適用すると新たなデプロイメントが作成される。
+ただし、Deployment内で動作するPodのmetadata.labels.appの値は先のステップで作成したDeployにより作成されたPodと同じ値。
+先のステップで作成したLoadBalancer Serviceの振り分け基準で使用しているPodの条件がmetadata.labels.appの値なので、新たに作成したDeploymentにもトラフィックが流れる。
+
+nginx-canary.yamlを作成する。
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-canary
+  labels:
+    app: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+        track: canary
+        Version: 1.9.1
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.9.1
+        ports:
+        - containerPort: 80
+```
+
+yamlを適用する.
+
+```sh
+kubectl apply -f nginx-canary.yaml
+kubectl get deployments
+```
+
+メインのDeploymentのレプリカを0にスケールダウン.
+
+```sh
+kubectl scale --replicas=0 deployment nginx-deployment
+kubectl get deployments
+```
+
+アフィニティ
+
+1つのクラン後から送信されるリクエストが異なるDeploymentのPodにアクセスされないようにしたい場合がある。
+その場合にはService作成用のファイルで`sessionAffinity`を`ClientIP`を指定する。
+その場合のService定義用のyamlファイルは以下。
+
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+spec:
+  type: LoadBalancer
+  sessionAffinity: ClientIP
+  selector:
+    app: nginx
+  ports:
+  - protocol: TCP
+    port: 60000
+    targetPort: 80
+```
+
+## Google Kubernetes Engine 用に永続ストレージを構成する
+
+export my_zone=us-central1-a
+export my_cluster=standard-cluster-1
+source <(kubectl completion bash)
+
+gcloud container clusters get-credentials $my_cluster --zone $my_zone
+
+git clone https://github.com/GoogleCloudPlatform/training-data-analyst
+ln -s ~/training-data-analyst/courses/ak8s/v1.1 ~/ak8s
+cd ~/ak8s/Storage/
+
+kubectl get persistentvolumeclaim
+
+pov-demo.yamlを作成
+
+```yaml
+```
+
+kubectl apply -f pvc-demo.yaml
+
+kubectl get persistentvolumeclaim
+
+persistentVolumeClaimを使用するPodを作成する
+
+pod-volume-demo.yamlを作成
+
+```yaml
+```
+
+kubectl apply -f pod-volume-demo.yaml
+
+kubectl get pods
+
+
+kubectl exec -it pvc-demo-pod -- sh
+
+echo Test webpage in a persistent volume!>/var/www/html/index.html
+chmod +x /var/www/html/index.html
+cat /var/www/html/index.html
+exit
+
+kubectl delete pod pvc-demo-pod
+kubectl get pods
+
+kubectl get persistentvolumeclaim
+
+kubectl apply -f pod-volume-demo.yaml
+kubectl get pods
+
+kubectl exec -it pvc-demo-pod -- sh
+
+cat /var/www/html/index.html
+exit
+
+kubectl delete pod pvc-demo-pod
+kubectl get pods
+
+StatefulSetを作成する。
+設定で`spec.volumeClaimTemplates`を設定することで各Pod用の永続ディスクが作成される。
+
+statefulset-demo.yamlを作成。
+
+```yaml
+```
+
+kubectl apply -f statefulset-demo.yaml
+
+kubectl describe statefulset statefulset-demo
+
+kubectl get pods
+kubectl get pvc
+
+kubectl describe pvc hello-web-disk-statefulset-demo-0
+
+kubectl exec -it statefulset-demo-0 -- sh
+
+cat /var/www/html/index.html
+echo Test webpage in a persistent volume!>/var/www/html/index.html
+chmod +x /var/www/html/index.html
+cat /var/www/html/index.html
+exit
+
+
+kubectl delete pod statefulset-demo-0
+kubectl get pods
+
+kubectl exec -it statefulset-demo-0 -- sh
+
+cat /var/www/html/index.html
+exit
+
+
+
