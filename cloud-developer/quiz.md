@@ -847,3 +847,445 @@ check
 
 新しいコードの周囲に時間の測定を追加して速度低下を検出する。
 
+## Practice Quiz: Best Practices for Application Development
+
+1. 
+You need to design a social application to reach a much broader audience than before. You want to achieve scalability, reliability, and security. Select two best practices that you can implement to build scalable, more secure, and highly available applications?
+
+Develop a highly secure user management system that you can rely on.
+
+check
+Design for loose coupling between application components.
+
+> Design application components so that they are loosely coupled at runtime. Tightly coupled components can make an application less resilient to failures, spikes in traffic, and changes to services.
+
+check
+Manage your application’s code and environment by using a code repository and a dependency management system.
+
+> Managing code and dependencies will enable you to track changes to your source code and set up systems for continuous integration and delivery.
+
+Avoid caching to minimize the number of services that your application depends on.
+
+2. You have a mission-critical application that is accessed globally. You must make sure that your application is able to serve traffic reliably. What is the best way to check if your application is ready to serve traffic?
+
+Set up monitoring dashboards that your global support team can look at 24 x 7.
+
+Write a cron job to ping your application's home page every minute.
+
+Ask your testing team to run the system tests every day.
+
+check
+Implement a health-check endpoint for each service.
+
+> The endpoint handler should check the health of all dependencies and infrastructure components required for the service to function properly.
+
+3. Which of the following statements is true?
+
+When rolling out builds to the production environment, consider performing canary testing to perform integration testing before deploying it to production.
+
+It is better to re-architect legacy applications in one big release so that engineering teams can focus on new applications.
+
+You can review data compliance and sovereignty requirements after you see the source of user traffic at launch.
+
+check
+For transient network errors, applications should implement retry logic with exponential backoff and fail gracefully if the errors persist.
+
+> When accessing services and resources in a distributed system, applications need to be resilient to temporary and long-lasting errors.
+
+## Final Quiz: Best Practices for Application Development 
+
+1. Identify two key aspects of this application's architecture.(Select all 2 correct answers)
+
+![Best practices for application development 01](./images/best_practices_for_app_dev_01.png)
+
+The layers of this application can be scaled independently.
+
+The layers of the application are loosely coupled.
+
+The application has a microservices-based architecture because the code is divided into a UI layer, business logic layer, and data access layer.
+check
+The application will require longer development and QAcycles as the system grows in features and complexity.
+Correct!
+
+check
+The application is monolithic because all layers need to be deployed as a single unit.
+Correct!
+
+2. Which of the following is considered a best practice when developing cloud-native applications?
+
+Using the Worker pattern, develop workers that share state to reduce data storage costs.
+
+check
+Implement API gateways to make backend functionality available to consumer applications.
+
+Store and manage log files alongside the application for quick troubleshooting in case of errors.
+
+Store external dependencies such as JAR files or external packages in your code repository to avoid confusion.
+
+3. Identify three key aspects of a sound architecture for a continuous integration and delivery (CI / CD) system. (Select all 3 correct answers)
+
+Developers can also build container images on their laptops and deploy to the development environment.
+
+check
+Builds should be tested in the development environment and canary deployments should be used before fully deploying the build to the production environment.
+Correct!
+
+check
+When a developer commits code into the code repository, a continuous integration tool such as Jenkins builds a container image for the application.
+Correct!
+
+check
+Canary deployments can help catch unexpected issues before they affect a large number of users in production.
+Correct!
+
+Docker container images are stored in Cloud Storage for easy versioning and retrieval.
+
+## Final Quiz: Data Storage Options
+
+1. You are building a banking application that is expected to have a very large number of users across the world. When users make a deposit, they want to see the result of this deposit reflected immediately when they view their balance. What data storage option is ideal for storing account balance information for users?
+
+Cloud SQL is ideal because it is a relational database that supports transactions.
+
+check
+Cloud Spanner is ideal because it supports strongly consistency reads in addition to horizontal scalability, low latency, and high throughput.
+
+Cloud Bigtable is ideal because it supports low-latency read/write access.
+
+Cloud Firestore for Firebase is ideal because it enables you to develop a mobile app later.
+
+2. You have a very large database that you are using for complex queries in a suite of business intelligence applications. You want to move the data to a fully-managed solution. Which database option is ideal for such use cases?
+
+Cloud Datastore
+
+check
+BigQuery
+
+Cloud Bigtable
+
+Firestore
+
+3. A restaurant in your neighborhood wants to put up a website that displays static information including a menu, restaurant hours, and location on a map. You want to help set up the website. What is the best solution for serving the website’s content on Google Cloud?
+
+Serve the website's content from an application server running on a Compute Engine instance.
+
+check
+Serve the website's content from a Cloud Storage bucket.
+
+Serve the website's content from a web server running on a Compute Engine instance.
+
+Serve the website's content from Cloud Bigtable.
+
+## Practice Quiz: Best Practices for Using Datastore
+
+1. Which one of the following statements about Cloud Datastore is accurate?
+
+Cloud Datastore supports complex joins with multiple inequality filters.
+
+Cloud Datastore supports referential integrity.
+
+Cloud Datastore supports analytics queries.
+
+check
+Cloud Datastore supports atomic transactions.
+
+2. You receive the following error code from a Cloud Datastore request: INTERNAL. What action should you take?
+
+Retry the request until it succeeds.
+
+Retry only if the problem is fixed.
+
+check
+Retry only once.
+
+Retry using exponential backoff.
+
+3. What best practices can you apply when creating a Cloud Datastore entity with a numeric key? Choose all that are correct (3 correct answers) .
+
+check
+When creating keys manually, get a block of IDs using the allocateIds() method.
+Correct!
+
+check
+Let Cloud Datastore automatically assign the numeric ID for the key.
+Correct!
+
+Always create keys with string IDs.
+
+check
+Avoid sequential numbering of keys.
+Correct!
+
+Avoid built-in indexes because they create hotspots.
+
+## Final Quiz: Best Practices for Using Datastore
+
+1. Your expense report application allows users to submit multiple expenses in a single report. You want to add each expense as a separate entity in Cloud Datastore. How can you reduce latency when adding expenses to Cloud Datastore?
+
+check
+Use a batch operation to add multiple entities in one request.
+
+Avoid built-in indexes for fast inserts.
+
+Use composite indexes to store and index multiple entities.
+
+Use automatically generated keys with numeric IDs.
+
+2. Which of the following statements about Cloud Datastore entities are accurate?(Select all 2 correct answers)
+
+check
+Entities of the same kind can have different properties.
+Correct!
+
+Entities of the same kind must have the same properties.
+
+Entities can specify foreign key relationships.
+
+check
+Entity keys can have manually generated numeric ids.
+
+## Practice Quiz: Best Practices for Cloud Storage
+
+1. What are the advantages of hosting static websites on Google Cloud Storage? (Select all 2 correct answers)
+
+Cloud Storage supports creation of signed URLs.
+
+check
+You don't need to set up and run a Compute Engine instance.
+
+> You don't need to set up a Compute Engine instance with a web server and load balancer.
+
+Cloud Storage automatically authenticates users.
+
+check
+You get automatic scaling with no additional effort.
+
+> Cloud Storage scales automatically to serve a large volume of traffic.
+
+2. Review the following gsutil command. What is the result when the command is executed?
+
+`gsutil mb -c regional -l us-central1 gs://parent-bucket`
+
+The command modifies a bucket called "parent-bucket" or creates the bucket if it does not already exist.
+
+check
+The command creates a bucket called "parent-bucket" in the "us-central1" location with "regional" storage class.
+
+The command modifies a bucket called "parent-bucket" and changes properties to "us-central1" location and "regional" storage class.
+
+The command creates a bucket called "regional" in the "us-central1" location under an existing bucket called "parent-bucket".
+
+3. Which of the following bucket names are valid? (Select all 2 correct answers)
+
+check
+bucket_for_my_web_app
+
+> A bucket name can contain lowercase alphanumeric characters, hyphens, and underscores. It can contain dots (.) if it forms a valid domain name with a top-level domain (such as .com).Bucket names must start and end with an alphanumeric character
+
+surprise!
+
+check
+vanilla-bucket
+
+> A bucket name can contain lowercase alphanumeric characters, hyphens, and underscores. It can contain dots (.) if it forms a valid domain name with a top-level domain (such as .com).Bucket names must start and end with an alphanumeric character
+
+MyFavoriteBucket
+
+## Final Quiz: Best Practices for Cloud Storage
+
+1. Review the following gsutil command. What is the result when the command is executed? gsutil mb -c regional -l us-central1 gs://parent-bucket
+
+The command modifies a bucket called "parent-bucket" or creates it if it does not already exist.
+
+The command creates a bucket called "regional" in the "us-central1" location under an existing bucket called "parent-bucket".
+check
+The command creates a bucket called "parent-bucket" in the "us-central1" location with "regional" storage class.
+
+The command modifies a bucket called "parent-bucket" and changes properties to "us-central1" location and "regional" storage class.
+
+2. Before transferring data to you, a third-party breaks up each large data file into 15 small chunks because of network bandwidth issues. You want to use Google BigQuery to directly query Cloud Storage data. What is the best way to combine the chunks into a single file?
+
+Use strongly consistent reads and writes to ensure accuracy of file transfer.
+
+check
+Use the "gsutil compose" command to build a composite object from smaller chunks.
+
+Use the "gsutil -m" command to perform a multi-threaded/multi-processing to transfer chunks as a single unit.
+
+Ask third-party to use truncated exponential backoff to failed upload of a large file.
+
+3. Identify two key aspects of this build system's architecture.
+
+![best_practices_for_app_dev_01](./images/best_practices_for_app_dev_01.png)
+
+It is best to set up gsutil scripts to transition objects to Nearline and Coldline storage classes.
+
+check
+The build system stores build artifacts in Cloud Storage.
+Correct!
+
+check
+As the build artifacts get older, they move through various storage classes to limit their retention cost.
+Correct!
+
+Jenkins can also be used to store build artifacts long term.
+
+4. You are tasked with designing a disaster recovery system in your organization. You need to make sure that all applications recover and become available as quickly as possible. What storage class is ideal for storing backups of your data if the data is to be stored for two years and is unlikely to be accessed?
+
+check
+Archive
+
+Coldline
+
+Nearline
+
+Standard
+
+## Practice Quiz
+
+1. What mechanism should you use to authenticate your applications when invoking Google APIs?
+
+loud IAM policy
+
+Google account
+
+Cloud IAM role
+
+check
+Service account
+
+> A service account is a special Google account that belongs to your application or a VM instance, instead of to an individual end user. Use a service account to call the Google API of a service.
+
+2. Review the following permission: bigquery.jobs.create Which of the following statements about the permission is accurate? Select two.
+
+check
+IAM members with this permission can create new jobs in BigQuery.
+
+> Cloud IAM permissions have the following format: <service>.<resource>.<verb>. This permission is related to the Google BigQuery service, its "jobs" resource, and its "create" action. IAM members with this permission can create new jobs in BigQuery.
+
+This permission is invalid because it does not restrict access to a single project.
+
+IAM members with this permission can create large jobs and queries.
+
+check
+This permission is related to the BigQuery service, "jobs" resource, and "create" action.
+
+> Cloud IAM permissions have the following format: <service>.<resource>.<verb>. This permission is related to the Google BigQuery service, its "jobs" resource, and its "create" action. IAM members with this permission can create new jobs in BigQuery.
+
+## Handling Authentication and Authorization Quiz
+
+1. Your photo-sharing application requires user login. You don't want to build a custom user authentication system that stores usernames and passwords. What is the best way to authenticate your users?
+
+check
+You can leverage federated identity management by using Firebase authentication.
+
+You can use OAuth 2.0 to access resources on behalf of a user.
+
+You can give employees read permissions to critical resources in the project.
+
+You can use Identity-Aware Proxy to provide application-level access.
+
+2. Your enterprise has an online expense reporting application. Employees must be able to access the application without having to log into the corporate VPN. How can you enable this type of access?
+
+You can leverage federated identity management by using Firebase authentication.
+
+You can use OAuth 2.0 to access resources on behalf of a user.
+
+You can give employees read permissions to critical resources in the project.
+
+check
+You can use Identity-Aware Proxy to provide application-level access.
+
+3. What is the best way to apply the principle of least privilege when granting access to Google Cloud resources?
+
+Granular permissions to access resources are not recommended because of the high maintenance burden.
+
+Grant broad permissions at the top of the resource hierarchy. Then, for some users, deny specific permissions at the individual resource level.
+
+check
+Grant restricted permissions at the top of the resource hierarchy. Then, for specific users, grant additional granular permissions as you go down the hierarchy.
+
+Grant permissions at the organization and folder level only for centralized maintenance.
+
+## Practice Quiz: Using Pub/Sub to Integrate Components of Your Application
+
+1. Review the following diagram. Which of the following statements is accurate? Select three. 
+
+![using_pub_sub_to_integrate_components_of_your_app_02](./images/using_pub_sub_to_integrate_components_of_your_app_02.png)
+
+check
+Multiple instances of the Orders service are publishing unique orders.
+
+> Cloud Pub/Sub can reliably receive and store large amounts of rapidly incoming data. The downstream service can then act as a subscriber and consume this data at a reasonable pace.
+
+The Inventory service will be overwhelmed by the high rate of incoming order messages because there are more publishers than subscribers.
+
+check
+The Orders service publishes orders to the Orders topic.
+
+> Cloud Pub/Sub can reliably receive and store large amounts of rapidly incoming data. The downstream service can then act as a subscriber and consume this data at a reasonable pace.
+
+check
+Subscribers can process orders at a reasonable pace because the Orders topic acts as a buffer to hold data that is coming in rapidly.
+
+> Cloud Pub/Sub can reliably receive and store large amounts of rapidly incoming data. The downstream service can then act as a subscriber and consume this data at a reasonable pace.
+
+2. How does Cloud Pub/Sub enable you to build scalable and reliable applications? Select two.
+
+check
+Cloud Pub/Sub enables you to scalably and reliably ingest large volumes of data.
+
+By using Cloud Pub/Sub, you can perform synchronous invocations with low latency.
+
+Cloud Pub/Sub enables you to build highly performant connections between applications.
+
+check
+By using Cloud Pub/Sub, you can avoid brittle point-to-point connections between applications.
+
+> By using Cloud Pub/Sub, you can avoid brittle point-to-point connections between applications. Cloud Pub/Sub enables you to design loosely coupled applications.
+
+## Final Quiz: Using Pub/Sub to Integrate Components of Your Application
+
+1. When a new employee joins your organization, HR needs to notify the security, facilities, and training teams so that those teams can perform their tasks related to new employees. You need to design an application architecture that notifies all teams promptly and reliably. Select the four steps that create the most effective design for this scenario.
+
+check
+Create a Cloud Pub/Sub topic called NewEmployee.
+Correct - good job!
+
+check
+Create an HRPublisher service that publishes messages to the NewEmployee topic.
+Correct - good job!
+
+Create a single subscription for security, facilities, and training.
+check
+Create a separate subscription for security, facilities, and training.
+Correct - good job!
+
+check
+Create SecuritySubscriber, FacilitiesSubscriber, and TrainingSubscriber services that subscribe to messages in the NewEmployee topic.
+Correct - good job!
+
+Create a Cloud Datastore entity to keep track of unique notifications.
+
+2. Sales data is published to a Cloud Pub/Sub topic called SalesTopic. The Finance application subscribes to the topic and begins receiving sales data messages. Later, the Inventory team creates another subscription to the topic to receive the Sales data as well. However, the Inventory team's data does not tally with the Finance team's data. What could the reason be?
+
+check
+The Inventory team's subscriber only receives messages that are published after the subscription was created.
+
+The Inventory team's subscriber likely missed sending acknowledgements back to the Cloud Pub/Sub service.
+
+The Inventory team's subscriber might have a misconfigured push endpoint.
+
+The messages lacked identifying attributes to perform idempotent operations.
+
+3. Why is Cloud Pub/Sub used in the architecture of an application that performs real-time data analysis of Twitter data?
+
+![using_pub_sub_to_integrate_components_of_your_app_03](./images/using_pub_sub_to_integrate_components_of_your_app_03.png)
+
+Cloud Pub/Sub is used to enforce message ordering in a queue.
+
+Cloud Pub/Sub is not really needed. The Twitter-to-Cloud-Pub/Sub-pod can write to BigQuery directly.
+
+Cloud Pub/Sub is used to fan out messages to Kubernetes pods and BigQuery.
+
+check
+Cloud Pub/Sub is used to buffer the high volume of incoming tweets.
